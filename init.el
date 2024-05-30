@@ -77,7 +77,7 @@
 (dolist (key (mapcar 'add-kbd keybindings-to-unset))
   (global-unset-key key))
 
-(electric-pair-mode 1)
+(electric-pair-mode 0)
 
 (global-visual-line-mode t)
 
@@ -119,6 +119,10 @@
                           :ensure t
                           :config
                           (evil-commentary-mode)))
+(with-eval-after-load 'evil
+    (defalias #'forward-evil-word #'forward-evil-symbol)
+    ;; make evil-search-word look for symbol rather than word boundaries
+    (setq-default evil-symbol-word-search t))
 
 (use-package evil-collection
   :after evil
@@ -186,8 +190,23 @@
 (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line)
 ;; (define-key evil-normal-state-map [bktab] 'evil-previous-visual-line)
 (define-key evil-motion-state-map (kbd ";") 'evil-ex)
-(define-key evil-normal-state-map (kbd "C-p") 'helm-ls-git)
-(define-key evil-normal-state-map (kbd "F") 'helm-git-grep)
+(define-key evil-normal-state-map (kbd "C-p") 'fzf-git-files) ;; helm-ls-git)
+(define-key evil-normal-state-map (kbd "F") 'grep)
+(define-key evil-normal-state-map (kbd "H") 'previous-error)
+(define-key evil-normal-state-map (kbd "L") 'next-error)
+(define-key evil-normal-state-map (kbd "<f9>") 'previous-error)
+(define-key evil-normal-state-map (kbd "<f10>") 'next-error)
+
+;; (global-set-key (kbd "<f3>") 'helm-git-grep)
+(define-key evil-normal-state-map (kbd "<f3>") 'grep-word-under-cursor)
+(defun grep-word-under-cursor ()
+  "setting up grep-command using current word under cursor as a search string"
+  (interactive)
+  (let* ((cur-word (symbol-at-point))
+         (cmd (concat "git grep -nH -e '\\<" (symbol-name cur-word) "\\>'")))
+    (grep-apply-setting 'grep-command cmd)
+    (grep cmd)))
+
 ;; (define-key evil-motion-state-map (kbd "jk") (kbd [escape]))
 ;; map :e
 ;; (define-key evil-ex-map "e" 'find-file)
@@ -215,8 +234,9 @@
 (evil-leader/set-leader "\\")
 (evil-leader/set-key
   "f" 'helm-browse-project
+  "d" 'edebug-defun
   "F" 'helm-git-grep
-  "0" '(find-file "~/.emacs.d/init.el")
+  "0" '(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
   ;; "F" 'helm-projectile-ag
   "q" 'evil-quit
   "w" 'save-buffer
@@ -228,7 +248,6 @@
 (define-key helm-map (kbd "C-k") 'helm-previous-line)
 (use-package helm-git-grep :ensure t)
 ;; (global-unset-key (kbd "<f3>"))
-(global-set-key (kbd "<f3>") 'helm-git-grep)
 (global-set-key (kbd "C-p") 'helm-ls-git)
 (setq helm-ls-git-sources '(helm-source-ls-git)) 
 
