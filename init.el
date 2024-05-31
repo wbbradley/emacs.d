@@ -4,9 +4,12 @@
 (package-initialize)
 
 (require 'package)
-(require 'compile)
+
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives '("elpa-nongnu" . "https://elpa.nongnu.org/nongnu/") t)
+
+(use-package rg :ensure t)
+
 ;; Comment/uncomment this line to enable MELPA Stable if desired.  See `package-archive-priorities`
 ;; and `package-pinned-packages`. Most users will not need or want to do this.
 ;; (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
@@ -16,7 +19,6 @@
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/") t)
 
 ;; export EDITOR='emacsclient -nw -c -a ""'
-
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
@@ -24,13 +26,14 @@
 (require 'use-package)
 (setq use-package-always-ensure t)
 
+;;(setq my-theme 'gruvbox-dark-hard)
 (setq my-theme 'gruvbox-dark-hard)
 (use-package gruvbox-theme :ensure t)
 (load-theme my-theme t)
 
 (use-package powerline
-             :ensure t
-             :config (powerline-center-evil-theme))
+  :ensure t
+  :config (powerline-center-evil-theme))
 
 (menu-bar-mode -1)
 ;; (scroll-bar-mode 0)
@@ -85,7 +88,7 @@
 (setq-default indent-tabs-mode nil)
 
 (use-package drag-stuff
-             :ensure t)
+  :ensure t)
 (drag-stuff-global-mode 1)
 ;; (global-set-key (kbd "C-k") 'drag-stuff-up)
 ;; (global-set-key (kbd "C-j") 'drag-stuff-down)
@@ -95,34 +98,34 @@
 
 ;; Evil mode
 (use-package evil
-             :ensure t
-             :init
-             ;; (global-set-key (kbd "C-i") 'evil-jump-forward)
-             (setq evil-want-C-i-jump t)
-             (setq evil-want-C-u-scroll t)
-             (setq evil-vsplit-window-right t)
-             (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
-             (setq evil-want-keybinding nil)
-             (setq evil-undo-system 'undo-redo)
-             :config
-             (evil-mode 1)
-             (use-package evil-leader
-                          :ensure t
-                          :config
-                          (global-evil-leader-mode))
+  :ensure t
+  :init
+  ;; (global-set-key (kbd "C-i") 'evil-jump-forward)
+  (setq evil-want-C-i-jump t)
+  (setq evil-want-C-u-scroll t)
+  (setq evil-vsplit-window-right t)
+  (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
+  (setq evil-want-keybinding nil)
+  (setq evil-undo-system 'undo-redo)
+  :config
+  (evil-mode 1)
+  (use-package evil-leader
+    :ensure t
+    :config
+    (global-evil-leader-mode))
 
-             (use-package evil-surround
-                          :ensure t
-                          :config
-                          (global-evil-surround-mode))
-             (use-package evil-commentary
-                          :ensure t
-                          :config
-                          (evil-commentary-mode)))
+  (use-package evil-surround
+    :ensure t
+    :config
+    (global-evil-surround-mode))
+  (use-package evil-commentary
+    :ensure t
+    :config
+    (evil-commentary-mode)))
 (with-eval-after-load 'evil
-    (defalias #'forward-evil-word #'forward-evil-symbol)
-    ;; make evil-search-word look for symbol rather than word boundaries
-    (setq-default evil-symbol-word-search t))
+  (defalias #'forward-evil-word #'forward-evil-symbol)
+  ;; make evil-search-word look for symbol rather than word boundaries
+  (setq-default evil-symbol-word-search t))
 
 (use-package evil-collection
   :after evil
@@ -142,7 +145,7 @@
 (defun minibuffer-keyboard-quit ()
   (interactive)
   (if (and delete-selection-mode transient-mark-mode mark-active)
-    (setq deactivate-mark  t)
+      (setq deactivate-mark  t)
     (when (get-buffer "*Completions*") (delete-windows-on "*Completions*"))
     (abort-recursive-edit)))
 
@@ -192,10 +195,16 @@
 (define-key evil-motion-state-map (kbd ";") 'evil-ex)
 (define-key evil-normal-state-map (kbd "C-p") 'fzf-git-files) ;; helm-ls-git)
 (define-key evil-normal-state-map (kbd "F") 'grep)
+(define-key evil-normal-state-map (kbd "T") 'helm-etags-select)
 (define-key evil-normal-state-map (kbd "H") 'previous-error)
 (define-key evil-normal-state-map (kbd "L") 'next-error)
 (define-key evil-normal-state-map (kbd "<f9>") 'previous-error)
 (define-key evil-normal-state-map (kbd "<f10>") 'next-error)
+(define-key evil-visual-state-map (kbd "!") 'eval-region)
+
+(require 'grep)
+(grep-apply-setting 'grep-command "git grep -nH ")
+(setq grep-use-null-device nil)
 
 ;; (global-set-key (kbd "<f3>") 'helm-git-grep)
 (define-key evil-normal-state-map (kbd "<f3>") 'grep-word-under-cursor)
@@ -207,6 +216,16 @@
     (grep-apply-setting 'grep-command cmd)
     (grep cmd)))
 
+(define-key evil-normal-state-map (kbd "<f1>") 'help-word-under-cursor)
+(defun help-word-under-cursor ()
+  "get help for the word under the cursor"
+  (interactive)
+  (let (cur-word (symbol-at-point))
+    (print (symbol-at-point))
+    (if cur-word
+        (help (symbol-name cur-word))
+      nil)))
+
 ;; (define-key evil-motion-state-map (kbd "jk") (kbd [escape]))
 ;; map :e
 ;; (define-key evil-ex-map "e" 'find-file)
@@ -214,7 +233,7 @@
   :bind
   (("C-p" . fzf-git-files)
    ("F" . fzf-git-grep))
-    ;; Don't forget to set keybinds!
+  ;; Don't forget to set keybinds!
   :config
   (setq fzf/args "-x --color bw --print-query --margin=1,0 --no-hscroll"
         fzf/executable "fzf"
@@ -227,6 +246,8 @@
         fzf/position-bottom t
         fzf/window-height 15))
 
+(use-package which-key :ensure t)
+(which-key-mode)
 (define-key evil-motion-state-map (kbd "-") 'evil-first-non-blank)
 ;; (define-key evil-motion-state-map (kbd "^") 'evil-beginning-of-line)
 
@@ -257,41 +278,41 @@
 ;; (use-package company :ensure t :config (global-company-mode t) (setq company-global-modes '(not org-mode)))
 ;; (define-key company-mode-map (kbd "TAB") 'company-complete)
 (use-package rainbow-delimiters
-             :init
-             (add-hook 'web-mode-hook #'rainbow-delimiters-mode)
-             (add-hook 'rust-mode-hook #'rainbow-delimiters-mode))
+  :init
+  (add-hook 'web-mode-hook #'rainbow-delimiters-mode)
+  (add-hook 'rust-mode-hook #'rainbow-delimiters-mode))
 (use-package magit
-             :ensure t
-             :config (setq magit-diff-refine-hunk 'all))
+  :ensure t
+  :config (setq magit-diff-refine-hunk 'all))
 (use-package diff-hl
-             :ensure t
-             :init
-             (setq diff-hl-side 'right))
+  :ensure t
+  :init
+  (setq diff-hl-side 'right))
 (global-diff-hl-mode 1)
 (diff-hl-margin-mode 1)
 (diff-hl-flydiff-mode 1)
 (use-package web-mode
-             :ensure t
-             :init
-             (setq web-mode-content-types-alist '(("jsx" . "\\.tsx\\'")))
-             (setq web-mode-content-types-alist '(("jsx" . "\\.js\\'")))
-             :config
-             (add-to-list 'auto-mode-alist '("\\.erb?\\'" . web-mode))
-             (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
-             (add-to-list 'auto-mode-alist '("\\.js[x]?\\'" . web-mode))
-             (add-to-list 'auto-mode-alist '("\\.ts[x]?\\'" . web-mode)))
+  :ensure t
+  :init
+  (setq web-mode-content-types-alist '(("jsx" . "\\.tsx\\'")))
+  (setq web-mode-content-types-alist '(("jsx" . "\\.js\\'")))
+  :config
+  (add-to-list 'auto-mode-alist '("\\.erb?\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.html?\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.js[x]?\\'" . web-mode))
+  (add-to-list 'auto-mode-alist '("\\.ts[x]?\\'" . web-mode)))
 (use-package add-node-modules-path
-             :ensure t)
+  :ensure t)
 (eval-after-load 'web-mode
-                 '(progn
-                    (add-hook 'web-mode-hook #'add-node-modules-path)
-                    (add-hook 'web-mode-hook #'prettier-js-mode)))
+  '(progn
+     (add-hook 'web-mode-hook #'add-node-modules-path)
+     (add-hook 'web-mode-hook #'prettier-js-mode)))
 (use-package yaml-mode :ensure t)
 (use-package haml-mode :ensure t)
 (use-package scss-mode
-             :mode (("\.scss\'" . scss-mode)))
+  :mode (("\.scss\'" . scss-mode)))
 (use-package tide
-             :ensure t)
+  :ensure t)
 (defun setup-tide-mode ()
   (interactive)
   (tide-setup)
@@ -311,35 +332,35 @@
 
 (add-hook 'web-mode-hook #'setup-tide-mode)
 (use-package graphql-mode
-             :ensure t)
+  :ensure t)
 (use-package rust-mode
-             :ensure t)
+  :ensure t)
 (use-package markdown-mode
-             :ensure t
-             :mode (("README\\.md\\'" . gfm-mode)
-                    ("\\.md\\'" . markdown-mode)
-                    ("\\.markdown\\'" . markdown-mode))
-             :init (setq markdown-command "multimarkdown"))
+  :ensure t
+  :mode (("README\\.md\\'" . gfm-mode)
+         ("\\.md\\'" . markdown-mode)
+         ("\\.markdown\\'" . markdown-mode))
+  :init (setq markdown-command "multimarkdown"))
 (add-to-list 'auto-mode-alist '("\\.tex.tera\\'" . latex-mode))
 (setq ruby-insert-encoding-magic-comment nil)
 (use-package editorconfig
-             :ensure t
-             :config
-             (editorconfig-mode 1))
+  :ensure t
+  :config
+  (editorconfig-mode 1))
 (use-package flycheck
-             :ensure t
-             :init
-             (setq flycheck-indication-mode nil)
-             (setq flycheck-display-errors-delay nil)
-             (setq flycheck-idle-change-delay 2)
-             (global-flycheck-mode))
+  :ensure t
+  :init
+  (setq flycheck-indication-mode nil)
+  (setq flycheck-display-errors-delay nil)
+  (setq flycheck-idle-change-delay 2)
+  (global-flycheck-mode))
 (flycheck-add-mode 'javascript-eslint 'web-mode)
 (with-eval-after-load 'flycheck
-                      (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t)))
+  (advice-add 'flycheck-eslint-config-exists-p :override (lambda() t)))
 (defun my/use-eslint-from-node-modules ()
   (let* ((root (locate-dominating-file
-                 (or (buffer-file-name) default-directory)
-                 "node_modules"))
+                (or (buffer-file-name) default-directory)
+                "node_modules"))
          (eslint (and root
                       (expand-file-name "node_modules/eslint/bin/eslint.js"
                                         root))))
@@ -351,10 +372,3 @@
 (evil-leader/set-key
   "j" 'flycheck-next-error
   "k" 'flycheck-previous-error)
-(defun reevaluate-eyecandy ()
-  (load-theme my-theme t))
-(if (daemonp)
-  (add-hook 'after-make-frame-functions
-            (lambda (frame)
-              (select-frame frame)
-              (reevaluate-eyecandy))))
