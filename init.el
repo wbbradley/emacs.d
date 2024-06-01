@@ -7,6 +7,7 @@
 
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (add-to-list 'package-archives '("elpa-nongnu" . "https://elpa.nongnu.org/nongnu/") t)
+(add-to-list 'package-archives '("elpa" . "https://elpa.gnu.org/packages/") t)
 
 (use-package rg :ensure t)
 
@@ -43,9 +44,8 @@
 
 
 ;; (global-linum-mode 1)
-(setq linum-format " %4d ")
-
-
+;; (setq linum-format " %4d ")
+(global-display-line-numbers-mode)
 (line-number-mode 1)
 (column-number-mode 1)
 
@@ -104,6 +104,7 @@
   (setq evil-want-C-i-jump t)
   (setq evil-want-C-u-scroll t)
   (setq evil-vsplit-window-right t)
+  (setq evil-split-window-below t)
   (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
   (setq evil-want-keybinding nil)
   (setq evil-undo-system 'undo-redo)
@@ -189,6 +190,10 @@
 ;; bind -n C-k run "(tmux display-message -p '#{pane_current_command}' | grep -iqE '(^|\/)n?vim(diff)?$|emacs.*$' && tmux send-keys C-k) || tmux select-pane -U"
 ;; bind -n C-l run "(tmux display-message -p '#{pane_current_command}' | grep -iqE '(^|\/)n?vim(diff)?$|emacs.*$' && tmux send-keys C-l) || tmux select-pane -R"
 
+(define-key evil-normal-state-map (kbd "C-j") (kbd "C-w j"))
+(define-key evil-normal-state-map (kbd "C-k") (kbd "C-w k"))
+(define-key evil-normal-state-map (kbd "C-h") (kbd "C-w h"))
+(define-key evil-normal-state-map (kbd "C-l") (kbd "C-w l"))
 (define-key evil-normal-state-map (kbd "j") 'evil-next-visual-line)
 (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line)
 ;; (define-key evil-normal-state-map [bktab] 'evil-previous-visual-line)
@@ -206,14 +211,13 @@
 (grep-apply-setting 'grep-command "git grep -nH ")
 (setq grep-use-null-device nil)
 
-;; (global-set-key (kbd "<f3>") 'helm-git-grep)
 (define-key evil-normal-state-map (kbd "<f3>") 'grep-word-under-cursor)
 (defun grep-word-under-cursor ()
   "setting up grep-command using current word under cursor as a search string"
   (interactive)
   (let* ((cur-word (symbol-at-point))
-         (cmd (concat "git grep -nH -e '\\<" (symbol-name cur-word) "\\>'")))
-    (grep-apply-setting 'grep-command cmd)
+         (cmd (concat "git grep -nH -e '\\<" (symbol-name cur-word) "\\>' -- :/")))
+    ;; (grep-apply-setting 'grep-command cmd)
     (grep cmd)))
 
 (define-key evil-normal-state-map (kbd "<f1>") 'help-word-under-cursor)
@@ -254,12 +258,13 @@
 ;; Evil Leader keybindings
 (evil-leader/set-leader "\\")
 (evil-leader/set-key
-  "f" 'helm-browse-project
+  "F" 'helm-browse-project
+  "t" 'treesit-inspect-node-at-point
   "d" 'edebug-defun
-  "F" 'helm-git-grep
+  "f" 'helm-git-grep
   "0" '(lambda () (interactive) (find-file "~/.emacs.d/init.el"))
   ;; "F" 'helm-projectile-ag
-  "q" 'evil-quit
+  "q" 'evil-quit-all
   "w" 'save-buffer
   "g" 'magit)
 
@@ -334,7 +339,16 @@
 (use-package graphql-mode
   :ensure t)
 (use-package rust-mode
-  :ensure t)
+  :ensure t
+   :init
+  (setq rust-mode-treesitter-derive t))
+
+(add-hook 'rust-mode-hook
+          (lambda () (setq indent-tabs-mode nil)))
+(setq rust-format-on-save t)
+(define-key evil-normal-state-map (kbd "<f7>") 'rust-check)
+(define-key evil-normal-state-map (kbd "<f8>") 'rust-run-clippy)
+
 (use-package markdown-mode
   :ensure t
   :mode (("README\\.md\\'" . gfm-mode)
