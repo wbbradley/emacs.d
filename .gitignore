@@ -16,4 +16,5 @@ auto-save-list
 .\#*
 *~
 transient/
-
+*.dylib
+elisp-autofmt-cache/
