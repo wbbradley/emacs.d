@@ -4,6 +4,11 @@
 (setq use-package-compute-statistics t)
 (package-initialize)
 (require 'package)
+(require 'flymake)
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
+;; (setq flymake-ruff-program "/Users/willbradley/bin/ruff")
+
+;;;;;;;;;;;; Setup Packages Index & use-package ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-to-list
  'package-archives '("melpa" . "https://melpa.org/packages/")
@@ -14,6 +19,27 @@
 (add-to-list
  'package-archives '("elpa" . "https://elpa.gnu.org/packages/")
  t)
+
+(require 'use-package)
+(setq use-package-always-ensure t)
+
+;; from https://github.com/akash-akya/emacs-flymake-cursor
+
+(use-package
+ flymake-cursor
+ :load-path "~/.emacs.d/lisp/emacs-flymake-cursor" ;; vendored repo path
+ :config (flymake-cursor-mode))
+
+(define-key flymake-mode-map (kbd "L") 'flymake-goto-next-error)
+(define-key flymake-mode-map (kbd "H") 'flymake-goto-prev-error)
+(add-hook
+ 'prog-mode-hook
+ (lambda ()
+   (flymake-mode 1)
+   (local-set-key [f2] 'flymake-goto-prev-error)
+   (local-set-key [f3] 'flymake-goto-next-error)))
+
+
 (use-package
  elisp-autofmt
  :commands (elisp-autofmt-mode elisp-autofmt-buffer)
@@ -22,25 +48,23 @@
 (setq elisp-autofmt-on-save-p 'always)
 (setq elisp-autofmt-python-bin
       (string-trim (shell-command-to-string "command -v python3")))
-(require 'pp)
-;; (use-package rg)
 
-;; Comment/uncomment this line to enable MELPA Stable if desired.  See `package-archive-priorities`
-;; and `package-pinned-packages`. Most users will not need or want to do this.
-;; (add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
-
-;; (load "package")
-;; (add-to-list 'package-archives '("melpa" . "http://melpa.milkbox.net/packages/") t)
+(with-eval-after-load 'python
+  (define-key
+   python-mode-map (kbd "<tab>") 'python-indent-shift-right)
+  (define-key
+   python-mode-map (kbd "S-<tab>") 'python-indent-shift-left))
+(setq tab-always-indent 'complete)
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/")
              t)
+
+(use-package flymake-ruff :hook (python-mode . flymake-ruff-load))
 
 ;; export EDITOR='emacsclient -nw -c -a ""'
 (unless (package-installed-p 'use-package)
   (package-refresh-contents)
   (package-install 'use-package))
 
-(require 'use-package)
-(setq use-package-always-ensure t)
 (use-package gruvbox-theme)
 
 (if (daemonp)
@@ -53,13 +77,12 @@
        (remove-hook
         'after-make-frame-functions #'my/theme-init-daemon)
        (fmakunbound 'my/theme-init-daemon))))
-;;(setq my-theme 'gruvbox-dark-hard)
 (setq my-theme 'gruvbox-dark-hard)
 (load-theme my-theme t)
 
 (use-package powerline :config (powerline-center-evil-theme))
 
-(menu-bar-mode -1)
+;; (menu-bar-mode -1)
 ;; (scroll-bar-mode 0)
 ;; (tool-bar-mode 0)
 
@@ -74,19 +97,9 @@
 
 (setq inhibit-startup-message t)
 (setq initial-scratch-message nil)
+(xterm-mouse-mode 1)
 
-
-(defun my-command-error-function (data context caller)
-  "Ignore the buffer-read-only signal; pass the rest to the default handler."
-  (when (not (eq (car data) 'text-read-only))
-    (command-error-default-function data context caller)))
-
-(setq command-error-function #'my-command-error-function)
-
-;; *** Enable usage of xclip
-;; (use-package xclip :config (xclip-mode 1))
-
-(setq custom-file (expand-file-name "custom.el" user-emacs-directory))
+(setq compilation-scroll-output 'first-error)
 
 (defconst emacs-tmp-dir
   (expand-file-name (format "emacs%d" (user-uid))
@@ -173,39 +186,6 @@
 (define-key
  minibuffer-local-isearch-map [escape] 'minibuffer-keyboard-quit)
 
-;; (use-package ivy)
-;; (use-package counsel)
-;; (use-package swiper)
-;; (ivy-mode)
-;; (setq ivy-use-virtual-buffers t)
-;; (setq enable-recursive-minibuffers t)
-;; ;; enable this if you want `swiper' to use it
-;; ;; (setq search-default-mode #'char-fold-to-regexp)
-;; (global-set-key "\C-s" 'swiper)
-;; (global-set-key (kbd "C-c C-r") 'ivy-resume)
-;; (global-set-key (kbd "<f6>") 'ivy-resume)
-;; (global-set-key (kbd "M-x") 'counsel-M-x)
-;; (global-set-key (kbd "C-p") 'counsel-find-file)
-;; (global-set-key (kbd "<f1> f") 'counsel-describe-function)
-;; (global-set-key (kbd "<f1> v") 'counsel-describe-variable)
-;; (global-set-key (kbd "<f1> o") 'counsel-describe-symbol)
-;; (global-set-key (kbd "<f1> l") 'counsel-find-library)
-;; (global-set-key (kbd "<f2> i") 'counsel-info-lookup-symbol)
-;; (global-set-key (kbd "<f2> u") 'counsel-unicode-char)
-;; (global-set-key (kbd "C-c g") 'counsel-git)
-;; (global-set-key (kbd "<f3>") 'counsel-git-grep)
-;; (global-set-key (kbd "C-c k") 'counsel-ag)
-;; (global-set-key (kbd "C-x l") 'counsel-locate)
-;; (global-set-key (kbd "C-S-o") 'counsel-rhythmbox)
-;; (define-key minibuffer-local-map (kbd "C-r") 'counsel-minibuffer-history)
-
-;; (use-package navigate)
-;; [[https://github.com/keith/evil-tmux-navigator][This package]] enables seamless C-[hjkl] movement through tmux panes _and_ Emacs windows. The following commands are required to be present in your tmux config:
-;; bind -n C-h run "(tmux display-message -p '#{pane_current_command}' | grep -iqE '(^|\/)n?vim(diff)?$|emacs.*$' && tmux send-keys C-h) || tmux select-pane -L"
-;; bind -n C-j run "(tmux display-message -p '#{pane_current_command}' | grep -iqE '(^|\/)n?vim(diff)?$|emacs.*$' && tmux send-keys C-j) || tmux select-pane -D"
-;; bind -n C-k run "(tmux display-message -p '#{pane_current_command}' | grep -iqE '(^|\/)n?vim(diff)?$|emacs.*$' && tmux send-keys C-k) || tmux select-pane -U"
-;; bind -n C-l run "(tmux display-message -p '#{pane_current_command}' | grep -iqE '(^|\/)n?vim(diff)?$|emacs.*$' && tmux send-keys C-l) || tmux select-pane -R"
-
 (define-key evil-normal-state-map (kbd "C-j") (kbd "C-w j"))
 (define-key evil-normal-state-map (kbd "C-k") (kbd "C-w k"))
 ;; (define-key evil-normal-state-map (kbd "C-h") (kbd "C-w h"))
@@ -216,10 +196,10 @@
 ;; (define-key evil-normal-state-map [bktab] 'evil-previous-visual-line)
 (define-key evil-motion-state-map (kbd ";") 'evil-ex)
 (define-key evil-normal-state-map (kbd "C-p") 'fzf-git-files) ;; helm-ls-git)
-(define-key evil-normal-state-map (kbd "F") 'grep)
+(define-key evil-normal-state-map (kbd "E") 'grep)
 (define-key evil-normal-state-map (kbd "T") 'helm-etags-select)
-(define-key evil-normal-state-map (kbd "H") 'previous-error)
-(define-key evil-normal-state-map (kbd "L") 'next-error)
+(define-key evil-normal-state-map (kbd "H") 'flymake-goto-prev-error)
+(define-key evil-normal-state-map (kbd "L") 'flymake-goto-next-error)
 (define-key evil-normal-state-map (kbd "<f9>") 'previous-error)
 (define-key evil-normal-state-map (kbd "<f10>") 'next-error)
 (define-key evil-visual-state-map (kbd "!") 'eval-region)
@@ -245,7 +225,7 @@
 (define-key
  evil-normal-state-map (kbd "<f1>") 'help-word-under-cursor)
 (defun help-word-under-cursor ()
-  "get help for the word under the cursor"
+  "Get help for the word under the cursor."
   (interactive)
   (let (cur-word
         (symbol-at-point))
@@ -259,7 +239,7 @@
 ;; (define-key evil-ex-map "e" 'find-file)
 (use-package
  fzf
- :bind (("C-p" . fzf-git-files) ("F" . fzf-git-grep))
+ :bind (("C-p" . fzf-git-files))
  ;; Don't forget to set keybinds!
  :config
  (setq
@@ -273,6 +253,11 @@
   ;; If nil, the fzf buffer will appear at the top of the window
   fzf/position-bottom t
   fzf/window-height 15))
+(define-key
+ evil-normal-state-map (kbd "F")
+ (lambda ()
+   (interactive)
+   (fzf-git-grep)))
 
 (use-package which-key)
 (which-key-mode)
@@ -288,92 +273,38 @@
  'treesit-inspect-node-at-point
  "d"
  'edebug-defun
- "f"
- 'helm-git-grep
  "0"
  '(lambda ()
     (interactive)
     (find-file "~/.emacs.d/init.el"))
- ;; "F" 'helm-projectile-ag
  "q"
  'evil-quit-all
  "w"
- 'save-buffer
- ;; "g" 'magit)
- )
+ 'save-buffer)
 
 (use-package helm :config (helm-mode t))
-(use-package helm-ls-git)
+;; (use-package helm-ls-git)
 (define-key helm-map (kbd "C-j") 'helm-next-line)
 (define-key helm-map (kbd "C-k") 'helm-previous-line)
-(use-package helm-git-grep)
-;; (global-unset-key (kbd "<f3>"))
-(global-set-key (kbd "C-p") 'helm-ls-git)
+;; (use-package helm-git-grep)
 (setq helm-ls-git-sources '(helm-source-ls-git))
 
-;; (use-package projectile :ensure projectile :config (setq projectile-indexing-method 'git))
-;; (use-package helm-projectile)
-;; (use-package helm-ag)
-;; (use-package company :config (global-company-mode t) (setq company-global-modes '(not org-mode)))
-;; (define-key company-mode-map (kbd "TAB") 'company-complete)
-(use-package
- rainbow-delimiters
- :init
- (add-hook 'web-mode-hook #'rainbow-delimiters-mode)
- (add-hook 'rust-mode-hook #'rainbow-delimiters-mode))
-;; (use-package magit :config (setq magit-diff-refine-hunk 'all))
-(use-package diff-hl :init (setq diff-hl-side 'right))
 (global-diff-hl-mode 1)
 (diff-hl-margin-mode 1)
-(diff-hl-flydiff-mode 1)
-(use-package yaml-mode)
-;; (use-package haml-mode)
 
+(use-package yaml-mode)
 (use-package rust-mode :init (setq rust-mode-treesitter-derive t))
 
 (add-hook 'rust-mode-hook (lambda () (setq indent-tabs-mode nil)))
 (setq rust-format-on-save t)
+
 (define-key evil-normal-state-map (kbd "<f7>") 'rust-check)
 (define-key evil-normal-state-map (kbd "<f8>") 'rust-run-clippy)
+(defun show-file-name ()
+  "Show the full path file name in the minibuffer."
+  (interactive)
+  (message (buffer-file-name)))
 
-(use-package
- markdown-mode
+(global-set-key [C-f1] 'show-file-name) ; Or any other key you want
 
- :mode
- (("README\\.md\\'" . gfm-mode)
-  ("\\.md\\'" . markdown-mode)
-  ("\\.markdown\\'" . markdown-mode))
- :init (setq markdown-command "multimarkdown"))
-(add-to-list 'auto-mode-alist '("\\.tex.tera\\'" . latex-mode))
-(setq ruby-insert-encoding-magic-comment nil)
-(use-package
- editorconfig
-
- :config (editorconfig-mode 1))
-(use-package
- flycheck
- :init
- (setq flycheck-indication-mode nil)
- (setq flycheck-display-errors-delay nil)
- (setq flycheck-idle-change-delay 2)
- (global-flycheck-mode))
-(flycheck-add-mode 'javascript-eslint 'web-mode)
-(with-eval-after-load 'flycheck
-  (advice-add
-   'flycheck-eslint-config-exists-p
-   :override (lambda () t)))
-(defun my/use-eslint-from-node-modules ()
-  (let* ((root
-          (locate-dominating-file
-           (or (buffer-file-name) default-directory) "node_modules"))
-         (eslint
-          (and root
-               (expand-file-name "node_modules/eslint/bin/eslint.js"
-                                 root))))
-    (when (and eslint (file-executable-p eslint))
-      (setq-local flycheck-javascript-eslint-executable eslint))))
-
-(add-hook 'flycheck-mode-hook #'my/use-eslint-from-node-modules)
-;; ** Use <leader>[jk] to navigate to the next and previous error
-(evil-leader/set-key
- "j" 'flycheck-next-error "k" 'flycheck-previous-error)
+(define-key evil-normal-state-map (kbd "C-g") #'show-file-name)
