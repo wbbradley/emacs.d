@@ -86,9 +86,9 @@
 
 (use-package powerline :config (powerline-center-evil-theme))
 
-;; (menu-bar-mode -1)
+(menu-bar-mode 0)
 ;; (scroll-bar-mode 0)
-;; (tool-bar-mode 0)
+(tool-bar-mode 1)
 
 (defalias 'yes-or-no-p 'y-or-n-p)
 (use-package
@@ -351,8 +351,8 @@
 (set-face-attribute 'flycheck-error nil
                     ;; :underline "#b72727"
                     :underline nil
-                    :foreground "white"
-                    :background "#b72727")
+                    :foreground "#e73737"
+                    :background "#473230")
 
 (set-face-attribute 'flycheck-warning nil
                     ;; :underline "#fabd2f"
