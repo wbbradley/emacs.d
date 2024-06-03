@@ -22,9 +22,35 @@
 
 (require 'use-package)
 (setq use-package-always-ensure t)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(use-package
+ reformatter
+ :hook
+ (python-mode . ruff-format-on-save-mode)
+ (python-ts-mode . ruff-format-on-save-mode)
+ :config
+ (reformatter-define
+  ruff-format
+  :program "ruff"
+  :args
+  `("format" "--stdin-filename" ,buffer-file-name "-")))
+
+(remove-hook
+ 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
+(use-package flymake-mypy :load-path "~/.emacs.d/lisp")
+(use-package rust-mode)
+(add-hook 'rust-mode-hook (lambda () (setq indent-tabs-mode nil)))
+(setq rust-format-on-save t)
+(use-package cargo)
+(use-package
+ ;; https://github.com/mgmarlow/flymake-clippy/issues/1
+ flymake-clippy
+ :hook (rust-mode . flymake-clippy-setup-backend))
+
+;; (use-package flymake-rust :load-path "~/.emacs.d/lisp" :hook (rust-mode-hook . lymake-rust-load))
 
 ;; from https://github.com/akash-akya/emacs-flymake-cursor
-
 (use-package
  flymake-cursor
  :load-path "~/.emacs.d/lisp/emacs-flymake-cursor" ;; vendored repo path
@@ -48,12 +74,17 @@
 (setq elisp-autofmt-on-save-p 'always)
 (setq elisp-autofmt-python-bin
       (string-trim (shell-command-to-string "command -v python3")))
-
 (with-eval-after-load 'python
   (define-key
    python-mode-map (kbd "<tab>") 'python-indent-shift-right)
   (define-key
-   python-mode-map (kbd "S-<tab>") 'python-indent-shift-left))
+   python-mode-map (kbd "<backtab>") 'python-indent-dedent-line)
+  (define-key
+   python-ts-mode-map (kbd "<tab>") 'python-indent-shift-right)
+  (define-key
+   python-ts-mode-map (kbd "<backtab>") 'python-indent-dedent-line)
+  (remove-hook 'flymake-diagnostic-functions 'python-flymake))
+
 (setq tab-always-indent 'complete)
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/")
              t)
@@ -66,17 +97,6 @@
   (package-install 'use-package))
 
 (use-package gruvbox-theme)
-
-(if (daemonp)
-    (add-hook
-     'after-make-frame-functions
-     (defun my/theme-init-daemon (frame)
-       (with-selected-frame frame
-         (load-theme 'atom-one-dark))
-       ;; Run this hook only once.
-       (remove-hook
-        'after-make-frame-functions #'my/theme-init-daemon)
-       (fmakunbound 'my/theme-init-daemon))))
 (setq my-theme 'gruvbox-dark-hard)
 (load-theme my-theme t)
 
@@ -127,9 +147,9 @@
 (drag-stuff-global-mode 1)
 ;; (global-set-key (kbd "C-k") 'drag-stuff-up)
 ;; (global-set-key (kbd "C-j") 'drag-stuff-down)
-
-(setq show-paren-delay 0)
 (show-paren-mode 1)
+(setq show-paren-delay 0)
+(setq show-paren-style 'parentheses)
 
 ;; Evil mode
 (use-package
@@ -203,6 +223,7 @@
 (define-key evil-normal-state-map (kbd "<f9>") 'previous-error)
 (define-key evil-normal-state-map (kbd "<f10>") 'next-error)
 (define-key evil-visual-state-map (kbd "!") 'eval-region)
+;; (setq tags-table-list '("~/.emacs.d" "~/lx/core"))
 
 (require 'grep)
 (grep-apply-setting 'grep-command "git grep -nH ")
@@ -260,6 +281,12 @@
    (fzf-git-grep)))
 
 (use-package which-key)
+(which-key-setup-side-window-right)
+(setq which-key-show-early-on-C-h t)
+(setq which-key-idle-delay 0.05)
+(setq which-key-idle-secondary-delay 0.05)
+(define-key
+ evil-normal-state-map (kbd " ") 'which-key-show-major-mode)
 (which-key-mode)
 (define-key evil-motion-state-map (kbd "-") 'evil-first-non-blank)
 ;; (define-key evil-motion-state-map (kbd "^") 'evil-beginning-of-line)
@@ -280,7 +307,9 @@
  "q"
  'evil-quit-all
  "w"
- 'save-buffer)
+ 'save-buffer
+ "SPC"
+ 'redraw-display)
 
 (use-package helm :config (helm-mode t))
 ;; (use-package helm-ls-git)
@@ -293,10 +322,7 @@
 (diff-hl-margin-mode 1)
 
 (use-package yaml-mode)
-(use-package rust-mode :init (setq rust-mode-treesitter-derive t))
 
-(add-hook 'rust-mode-hook (lambda () (setq indent-tabs-mode nil)))
-(setq rust-format-on-save t)
 
 (define-key evil-normal-state-map (kbd "<f7>") 'rust-check)
 (define-key evil-normal-state-map (kbd "<f8>") 'rust-run-clippy)
@@ -308,3 +334,53 @@
 (global-set-key [C-f1] 'show-file-name) ; Or any other key you want
 
 (define-key evil-normal-state-map (kbd "C-g") #'show-file-name)
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(helm-minibuffer-history-key "M-p")
+ '(package-selected-packages
+   '(reformatter
+     yaml-mode
+     which-key
+     web-mode
+     tide
+     scss-mode
+     rust-mode
+     rg
+     rainbow-delimiters
+     powerline
+     markdown-mode
+     magit
+     helm-projectile
+     helm-ls-git
+     helm-git-grep
+     helm-ag
+     haml-mode
+     gruvbox-theme
+     graphql-mode
+     fzf
+     flymake-ruff
+     flymake-cursor
+     evil-surround
+     evil-leader
+     evil-escape
+     evil-commentary
+     evil-collection
+     elisp-autofmt
+     editorconfig
+     dumb-jump
+     drag-stuff
+     diff-hl
+     counsel
+     company
+     add-node-modules-path)))
+(set-face-attribute 'error nil :underline t) ;;"#b72727")
+(set-face-attribute 'warning nil :underline t) ;;"#fabd2f")
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ )
