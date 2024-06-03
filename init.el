@@ -1,13 +1,13 @@
-;;; package --- Summar of My config
+;;; init --- Summary of My config
 ;;;; Commentary:
 ;;;; Code:
+(setq sav-gc-cons-threshold gc-cons-threshold)
+(setq gc-cons-threshold (* 100 1024 1024))
 (setq use-package-compute-statistics t)
-(package-initialize)
+(setq use-package-always-defer t)
 (require 'package)
-(add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 ;;;;;;;;;;;; Setup Packages Index & use-package ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
 (add-to-list
  'package-archives '("melpa" . "https://melpa.org/packages/")
  t)
@@ -17,10 +17,13 @@
 (add-to-list
  'package-archives '("elpa" . "https://elpa.gnu.org/packages/")
  t)
+(package-initialize)
 
 (require 'use-package)
 (setq use-package-always-ensure t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(setq fill-column 100)
 
 (use-package
  reformatter
@@ -32,12 +35,24 @@
   ruff-format
   :program "ruff"
   :args
-  `("format" "--stdin-filename" ,buffer-file-name "-")))
+  `("format" "--stdin-filename" ,buffer-file-name "-"))
+ (reformatter-define
+  autoimport-format
+  :program "autoimport"
+  :args ("/dev/stdin")))
+
+(use-package
+ python-isort
+ :load-path "~/.emacs.d/lisp"
+ :hook
+ (python-mode . python-isort-on-save-mode)
+ (python-ts-mode . python-isort-on-save-mode))
+
+(add-hook 'before-save-hook 'delete-trailing-whitespace)
 
 (use-package rust-mode)
 (add-hook 'rust-mode-hook (lambda () (setq indent-tabs-mode nil)))
 (setq rust-format-on-save t)
-(use-package cargo)
 
 (use-package
  elisp-autofmt
@@ -77,6 +92,11 @@
 ;; (tool-bar-mode 0)
 
 (defalias 'yes-or-no-p 'y-or-n-p)
+(use-package
+ flycheck
+ :init
+ (global-flycheck-mode)
+ (setq flycheck-display-errors-delay 0.015))
 
 
 ;; (global-linum-mode 1)
@@ -99,12 +119,6 @@
 (setq auto-save-list-file-prefix emacs-tmp-dir)
 
 (setq create-lockfiles nil)
-
-(defun add-kbd (key)
-  (kbd key))
-(defvar keybindings-to-unset '("M-k" "M-j"))
-(dolist (key (mapcar 'add-kbd keybindings-to-unset))
-  (global-unset-key key))
 
 (electric-pair-mode 0)
 
@@ -133,12 +147,39 @@
  (setq evil-want-integration t) ;; This is optional since it's already set to t by default.
  (setq evil-want-keybinding nil)
  (setq evil-undo-system 'undo-redo)
- :config
- (evil-mode 1)
- (use-package evil-leader :config (global-evil-leader-mode))
+ :demand t
+ :config (evil-mode 1))
+(use-package
+ evil-leader
+ :demand t
+ :config (global-evil-leader-mode) (evil-leader/set-leader "\\")
+ (evil-leader/set-key
+  "F"
+  'helm-browse-project
+  "t"
+  'treesit-inspect-node-at-point
+  "d"
+  'edebug-defun
+  "0"
+  '(lambda ()
+     (interactive)
+     (find-file "~/.emacs.d/init.el"))
+  "q"
+  'evil-quit-all
+  "w"
+  'save-buffer
+  "SPC"
+  'redraw-display))
 
- (use-package evil-surround :config (global-evil-surround-mode))
- (use-package evil-commentary :config (evil-commentary-mode)))
+(use-package
+ helm
+ :config
+ (helm-mode t)
+ (define-key helm-map (kbd "C-j") 'helm-next-line)
+ (define-key helm-map (kbd "C-k") 'helm-previous-line))
+
+;; (use-package evil-surround :config (global-evil-surround-mode))
+;; (use-package evil-commentary :config (evil-commentary-mode)))
 (with-eval-after-load 'evil
   (defalias #'forward-evil-word #'forward-evil-symbol)
   ;; make evil-search-word look for symbol rather than word boundaries
@@ -190,6 +231,8 @@
 (define-key evil-normal-state-map (kbd "T") 'helm-etags-select)
 (define-key evil-normal-state-map (kbd "<f9>") 'previous-error)
 (define-key evil-normal-state-map (kbd "<f10>") 'next-error)
+(define-key evil-normal-state-map (kbd "L") 'flycheck-next-error)
+(define-key evil-normal-state-map (kbd "H") 'flycheck-previous-error)
 (define-key evil-visual-state-map (kbd "!") 'eval-region)
 ;; (setq tags-table-list '("~/.emacs.d" "~/lx/core"))
 
@@ -200,7 +243,7 @@
 (define-key
  evil-normal-state-map (kbd "<f3>") 'grep-word-under-cursor)
 (defun grep-word-under-cursor ()
-  "setting up grep-command using current word under cursor as a search string"
+  "Setting up grep-command using current word under cursor as a search string."
   (interactive)
   (let* ((cur-word (symbol-at-point))
          (cmd
@@ -211,37 +254,17 @@
     ;; (grep-apply-setting 'grep-command cmd)
     (grep cmd)))
 
-(define-key
- evil-normal-state-map (kbd "<f1>") 'help-word-under-cursor)
-(defun help-word-under-cursor ()
-  "Get help for the word under the cursor."
-  (interactive)
-  (let (cur-word
-        (symbol-at-point))
-    (print (symbol-at-point))
-    (if cur-word
-        (help (symbol-name cur-word))
-      nil)))
-
-;; (define-key evil-motion-state-map (kbd "jk") (kbd [escape]))
-;; map :e
-;; (define-key evil-ex-map "e" 'find-file)
 (use-package
  fzf
  :bind (("C-p" . fzf-git-files))
- ;; Don't forget to set keybinds!
  :config
  (setq
   fzf/args "-x --color bw --print-query --margin=1,0 --no-hscroll"
   fzf/executable "fzf"
   fzf/git-grep-args "-i --line-number %s"
-  ;; command used for `fzf-grep-*` functions
-  ;; example usage for ripgrep:
-  ;; fzf/grep-command "rg --no-heading -nH"
   fzf/grep-command "grep -nrH"
-  ;; If nil, the fzf buffer will appear at the top of the window
   fzf/position-bottom t
-  fzf/window-height 15))
+  fzf/window-height 25))
 (define-key
  evil-normal-state-map (kbd "F")
  (lambda ()
@@ -251,38 +274,15 @@
 (use-package which-key)
 (which-key-setup-side-window-right)
 (setq which-key-show-early-on-C-h t)
-(setq which-key-idle-delay 0.05)
-(setq which-key-idle-secondary-delay 0.05)
+(setq which-key-idle-delay 0.5)
+(setq which-key-idle-secondary-delay 0.5)
 (define-key
  evil-normal-state-map (kbd " ") 'which-key-show-major-mode)
 (which-key-mode)
 (define-key evil-motion-state-map (kbd "-") 'evil-first-non-blank)
 ;; (define-key evil-motion-state-map (kbd "^") 'evil-beginning-of-line)
 
-;; Evil Leader keybindings
-(evil-leader/set-leader "\\")
-(evil-leader/set-key
- "F"
- 'helm-browse-project
- "t"
- 'treesit-inspect-node-at-point
- "d"
- 'edebug-defun
- "0"
- '(lambda ()
-    (interactive)
-    (find-file "~/.emacs.d/init.el"))
- "q"
- 'evil-quit-all
- "w"
- 'save-buffer
- "SPC"
- 'redraw-display)
-
-(use-package helm :config (helm-mode t))
 ;; (use-package helm-ls-git)
-(define-key helm-map (kbd "C-j") 'helm-next-line)
-(define-key helm-map (kbd "C-k") 'helm-previous-line)
 ;; (use-package helm-git-grep)
 (setq helm-ls-git-sources '(helm-source-ls-git))
 
@@ -307,9 +307,14 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
+ '(custom-safe-themes
+   '("7b8f5bbdc7c316ee62f271acf6bcd0e0b8a272fdffe908f8c920b0ba34871d98"
+     "871b064b53235facde040f6bdfa28d03d9f4b966d8ce28fb1725313731a2bcc8"
+     default))
  '(helm-minibuffer-history-key "M-p")
  '(package-selected-packages
-   '(reformatter
+   '(flycheck
+     reformatter
      yaml-mode
      which-key
      web-mode
@@ -342,11 +347,24 @@
      counsel
      company
      add-node-modules-path)))
-(set-face-attribute 'error nil :underline t) ;;"#b72727")
-(set-face-attribute 'warning nil :underline t) ;;"#fabd2f")
+(set-face-attribute 'error nil :underline "#b72727")
+(set-face-attribute 'warning nil :underline "#fabd2f")
+(set-face-attribute 'flycheck-error nil
+                    ;; :underline "#b72727"
+                    :underline nil
+                    :foreground "white"
+                    :background "#b72727")
+
+(set-face-attribute 'flycheck-warning nil
+                    ;; :underline "#fabd2f"
+                    :underline nil
+                    :foreground "black"
+                    :background "#fabd2f")
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  )
+
+(setq gc-cons-threshold sav-gc-cons-threshold)
