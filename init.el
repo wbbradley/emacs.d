@@ -4,9 +4,7 @@
 (setq use-package-compute-statistics t)
 (package-initialize)
 (require 'package)
-(require 'flymake)
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
-;; (setq flymake-ruff-program "/Users/willbradley/bin/ruff")
 
 ;;;;;;;;;;;; Setup Packages Index & use-package ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -36,35 +34,10 @@
   :args
   `("format" "--stdin-filename" ,buffer-file-name "-")))
 
-(remove-hook
- 'flymake-diagnostic-functions 'flymake-proc-legacy-flymake)
-(use-package flymake-mypy :load-path "~/.emacs.d/lisp")
 (use-package rust-mode)
 (add-hook 'rust-mode-hook (lambda () (setq indent-tabs-mode nil)))
 (setq rust-format-on-save t)
 (use-package cargo)
-(use-package
- ;; https://github.com/mgmarlow/flymake-clippy/issues/1
- flymake-clippy
- :hook (rust-mode . flymake-clippy-setup-backend))
-
-;; (use-package flymake-rust :load-path "~/.emacs.d/lisp" :hook (rust-mode-hook . lymake-rust-load))
-
-;; from https://github.com/akash-akya/emacs-flymake-cursor
-(use-package
- flymake-cursor
- :load-path "~/.emacs.d/lisp/emacs-flymake-cursor" ;; vendored repo path
- :config (flymake-cursor-mode))
-
-(define-key flymake-mode-map (kbd "L") 'flymake-goto-next-error)
-(define-key flymake-mode-map (kbd "H") 'flymake-goto-prev-error)
-(add-hook
- 'prog-mode-hook
- (lambda ()
-   (flymake-mode 1)
-   (local-set-key [f2] 'flymake-goto-prev-error)
-   (local-set-key [f3] 'flymake-goto-next-error)))
-
 
 (use-package
  elisp-autofmt
@@ -82,14 +55,11 @@
   (define-key
    python-ts-mode-map (kbd "<tab>") 'python-indent-shift-right)
   (define-key
-   python-ts-mode-map (kbd "<backtab>") 'python-indent-dedent-line)
-  (remove-hook 'flymake-diagnostic-functions 'python-flymake))
+   python-ts-mode-map (kbd "<backtab>") 'python-indent-dedent-line))
 
 (setq tab-always-indent 'complete)
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/")
              t)
-
-(use-package flymake-ruff :hook (python-mode . flymake-ruff-load))
 
 ;; export EDITOR='emacsclient -nw -c -a ""'
 (unless (package-installed-p 'use-package)
@@ -218,8 +188,6 @@
 (define-key evil-normal-state-map (kbd "C-p") 'fzf-git-files) ;; helm-ls-git)
 (define-key evil-normal-state-map (kbd "E") 'grep)
 (define-key evil-normal-state-map (kbd "T") 'helm-etags-select)
-(define-key evil-normal-state-map (kbd "H") 'flymake-goto-prev-error)
-(define-key evil-normal-state-map (kbd "L") 'flymake-goto-next-error)
 (define-key evil-normal-state-map (kbd "<f9>") 'previous-error)
 (define-key evil-normal-state-map (kbd "<f10>") 'next-error)
 (define-key evil-visual-state-map (kbd "!") 'eval-region)
@@ -361,8 +329,6 @@
      gruvbox-theme
      graphql-mode
      fzf
-     flymake-ruff
-     flymake-cursor
      evil-surround
      evil-leader
      evil-escape
