@@ -28,18 +28,17 @@
 (use-package
  reformatter
  :hook
+ (python-mode . autoimport-on-save-mode)
  (python-mode . ruff-format-on-save-mode)
+ (python-ts-mode . autoimport-on-save-mode)
  (python-ts-mode . ruff-format-on-save-mode)
  :config
+ (reformatter-define autoimport :program "autoimport" :args '("-"))
  (reformatter-define
   ruff-format
   :program "ruff"
   :args
-  `("format" "--stdin-filename" ,buffer-file-name "-"))
- (reformatter-define
-  autoimport-format
-  :program "autoimport"
-  :args ("/dev/stdin")))
+  `("format" "--stdin-filename" ,buffer-file-name "-")))
 
 (use-package
  python-isort
