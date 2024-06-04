@@ -1,0 +1,14 @@
+#!/bin/bash
+progname="$(basename "$0")"
+prog="$(git rev-parse --show-toplevel)"/.venv/bin/"$progname"
+log_filename="$HOME"/venv-runner.log
+now="$(date +"%Y-%m-%dT%H:%M:%S%z")"
+if ! [[ -x "$prog" ]]; then
+    (
+        echo "venv-runner: error: could not find '$progname' [PWD=$PWD, now=$now]" \
+            | tee -a "$log_filename"
+    ) >&2
+  exit 0
+fi
+echo "venv-runner: info: running '$progname' [PWD=$PWD, prog=$prog, args=( $* ), now=$now]" >> "$log_filename"
+exec "$prog" "$@"

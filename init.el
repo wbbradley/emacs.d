@@ -7,6 +7,20 @@
 (setq use-package-always-defer t)
 (require 'package)
 
+;; Prepend ~/.emacs.d/bin to path.
+(let* ((new-path (expand-file-name "bin" user-emacs-directory))
+       (path-list (split-string (getenv "PATH") path-separator))
+       (path-exists (member new-path path-list)))
+
+  (unless path-exists
+    (setenv "PATH" (concat new-path path-separator (getenv "PATH")))))
+
+(setq frame-title-format
+      (list
+       (format "%s %%S: %%j " (system-name))
+       '(buffer-file-name
+         "%f" (dired-directory dired-directory "%b"))))
+
 ;;;;;;;;;;;; Setup Packages Index & use-package ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list
  'package-archives '("melpa" . "https://melpa.org/packages/")
@@ -25,27 +39,23 @@
 
 (setq fill-column 100)
 
+(defun revert-buffer-no-confirm ()
+  "Revert buffer without confirmation."
+  (interactive)
+  (revert-buffer t (not (buffer-modified-p)) t))
+(global-set-key (kbd "<f5>") 'revert-buffer-no-confirm)
+
 (use-package
  reformatter
  :hook
- (python-mode . autoimport-on-save-mode)
- (python-mode . ruff-format-on-save-mode)
- (python-ts-mode . autoimport-on-save-mode)
- (python-ts-mode . ruff-format-on-save-mode)
+ (python-mode . willfmt-on-save-mode)
+ (python-ts-mode . willfmt-on-save-mode)
  :config
- (reformatter-define autoimport :program "autoimport" :args '("-"))
  (reformatter-define
-  ruff-format
-  :program "ruff"
-  :args
-  `("format" "--stdin-filename" ,buffer-file-name "-")))
-
-(use-package
- python-isort
- :load-path "~/.emacs.d/lisp"
- :hook
- (python-mode . python-isort-on-save-mode)
- (python-ts-mode . python-isort-on-save-mode))
+  willfmt
+  :program
+  (expand-file-name "bin/willfmt" user-emacs-directory)
+  :args `(,buffer-file-name)))
 
 (add-hook 'before-save-hook 'delete-trailing-whitespace)
 

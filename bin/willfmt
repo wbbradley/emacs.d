@@ -1,0 +1,21 @@
+#!/bin/bash
+echo "$PWD\$ $0 $*" >>"$HOME"/willfmt.log
+
+filename=$1
+shift
+
+if ! [[ -f "$filename" ]]; then
+   echo "$0: error: filename does not exist [filename=$filename]" >&2
+   exit 1
+fi
+
+tmpfile="$(mktemp)"
+cat >"$tmpfile"
+trap 'rm '"$tmpfile" EXIT
+
+# NB: autoimport is angry when you have circular import avoidance in
+# nested blocks. It rips it out and puts it up at the top.
+# autoimport "$tmpfile"
+isort --quiet -l 100 --atomic "$tmpfile"
+<"$tmpfile" \
+  ruff format --stdin-filename "$filename" -
