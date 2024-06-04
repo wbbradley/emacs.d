@@ -71,16 +71,6 @@
 (setq elisp-autofmt-on-save-p 'always)
 (setq elisp-autofmt-python-bin
       (string-trim (shell-command-to-string "command -v python3")))
-(with-eval-after-load 'python
-  (define-key
-   python-mode-map (kbd "<tab>") 'python-indent-shift-right)
-  (define-key
-   python-mode-map (kbd "<backtab>") 'python-indent-dedent-line)
-  (define-key
-   python-ts-mode-map (kbd "<tab>") 'python-indent-shift-right)
-  (define-key
-   python-ts-mode-map (kbd "<backtab>") 'python-indent-dedent-line))
-
 (setq tab-always-indent 'complete)
 (add-to-list 'package-archives '("org" . "http://orgmode.org/elpa/")
              t)
@@ -242,8 +232,10 @@
 (define-key evil-normal-state-map (kbd "<f10>") 'next-error)
 (define-key evil-normal-state-map (kbd "L") 'flycheck-next-error)
 (define-key evil-normal-state-map (kbd "H") 'flycheck-previous-error)
+(define-key evil-normal-state-map (kbd "<backtab>") (kbd "<<"))
+(define-key evil-normal-state-map (kbd "<tab>") (kbd ">>"))
+(define-key evil-visual-state-map (kbd "<tab>") (kbd ">>"))
 (define-key evil-visual-state-map (kbd "!") 'eval-region)
-;; (setq tags-table-list '("~/.emacs.d" "~/lx/core"))
 
 (require 'grep)
 (grep-apply-setting 'grep-command "git grep -nH ")
