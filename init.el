@@ -369,4 +369,7 @@
  )
 
 (setq gc-cons-threshold sav-gc-cons-threshold)
+(global-hl-line-mode 1)
+(setq sh-basic-offset 2)
+(setq sh-indentation 2)
 ;;; init.el ends here
