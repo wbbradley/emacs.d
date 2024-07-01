@@ -233,8 +233,8 @@
 (define-key evil-normal-state-map (kbd "L") 'flycheck-next-error)
 (define-key evil-normal-state-map (kbd "H") 'flycheck-previous-error)
 (define-key evil-normal-state-map (kbd "<backtab>") (kbd "<<"))
-(define-key evil-normal-state-map (kbd "<tab>") (kbd ">>"))
-(define-key evil-visual-state-map (kbd "<tab>") (kbd ">>"))
+(define-key evil-normal-state-map (kbd "TAB") (kbd ">>"))
+(define-key evil-visual-state-map (kbd "TAB") (kbd ">>"))
 (define-key evil-visual-state-map (kbd "!") 'eval-region)
 
 (require 'grep)
@@ -372,4 +372,27 @@
 (global-hl-line-mode 1)
 (setq sh-basic-offset 2)
 (setq sh-indentation 2)
+
+(defun find-file-upwards (file dir)
+  "Look for ./FILE, ../FILE, etc ascending until found, returning it or nil."
+  (let* ((dir2 (expand-file-name dir))
+         (f (concat dir2 "/" file)))
+    (cond
+     ((string-equal "/" dir2)
+      nil)
+     ((file-exists-p f)
+      f)
+     (t
+      (find-file-upwa rds file (concat dir2 "/.."))))))
+
+(defadvice find-tag (before find-tags-table () activate)
+  "find-tag (M-.) will load ./TAGS by default, the first time you use
+it.  This will look in parent dirs up to root for it as well."
+  (or (get-buffer "tags")
+      (let ((tagfile (find-file-upwards "tags" ".")))
+        (if tagfile
+            (visit-tags-table tagfile)
+          (error
+           "Can't find TAGS looking upwards from %s"
+           default-directory)))))
 ;;; init.el ends here
